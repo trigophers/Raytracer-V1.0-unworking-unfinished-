@@ -3,7 +3,7 @@
 
 #include <iostream> //for 'cout'
 #include <fstream> //for writing to file
-#include <math.h>
+#include <math.h> //for math
 
 
 
@@ -19,21 +19,26 @@ float savedR;
 float savedG;
 float savedB;
 
+//some environment parameters
 const float ambient = 0.1;
 const float diffuse = 0.5;
 const float FOV = 300;
 const float phongValue = 0.8;
 
+//camera parameters
 const float camXDir = 0;
 const float camYDir = 0;
 const float camX = 40;
 const float camY = 0;
 const float camZ = -250;
 
+//these mostly just hold values temporarily, mostly for optimization
 float near;
 float length;
 float lightDist;
+//this raytracer uses the phong lighting model
 float phong = 0;
+
 float renderDist;
 float savedRayDirection;
 float shade;
@@ -42,45 +47,62 @@ float dist;
 float dot;
 float dotDir;
 
+//vectors
+
+//vector position
 float centerX;
 float centerY;
 float centerZ;
+
+//interseption vector
 float interseptX;
 float interseptY;
 float interseptZ;
+
+//light rays
 float lightX;
 float lightY;
 float lightZ;
 float lightx;
 float lighty;
 float lightz;
+
+//surface normal
 float normalX;
 float normalY;
 float normalZ;
+
+//vector head
 float rayX;
 float rayY;
 float rayZ;
+
+//reflection vector
 float reflectionX;
 float reflectionY;
 float reflectionZ;
+
+//vector value holder
 float sphereX;
 float sphereY;
 float sphereZ;
 
 
-
+//set final pixel color
 void setPenColorTo(float spctR, float spctG, float spctB) {
 	R = floor(spctR);
 	G = floor(spctG);
 	B = floor(spctB);
 }
 
+//clamp values, transfer to _ R/G/B
 void setRGBColorTo(float srgbctR, float srgbctG, float srgbctB) {
 	_R = srgbctR * (!srgbctR > 255) + 255 * (srgbctR > 255);
 	_G = srgbctG * (!srgbctG > 255) + 255 * (srgbctG > 255);
 	_B = srgbctB * (!srgbctB > 255) + 255 * (srgbctB > 255);
 }
 
+//calc plane distance
 void plane(float pNormalX, float pNormalY, float pNormalZ, float pDistance, float pSize, int pR1, int pG1, int pB1, int pR2, int pG2, int pB2) {
 	dotDir = pNormalX * rayX + pNormalY * rayY + pNormalZ * rayZ;
 	dot = pNormalX * centerX + pNormalY * centerY + pNormalZ * centerZ;
@@ -99,6 +121,7 @@ void plane(float pNormalX, float pNormalY, float pNormalZ, float pDistance, floa
 	}
 }
 
+//calculate sphere distance
 void sphere(float sX, float sY, float sZ, float sRad, int sR, int sG, int sB) {
 	sphereX = sX - centerX;
 	sphereY = sY - centerY;
@@ -121,18 +144,21 @@ void sphere(float sX, float sY, float sZ, float sRad, int sR, int sG, int sB) {
 	}
 }
 
+//scene params
 void calculateDistance() {
 	sphere(-30, -20, -20, 50, 255, 0, 0);
 	sphere(30, 20, 80, 100, 0, 255, 0);
 	plane(0, 1, 0, 100, 50, 255, 255, 255, 200, 200, 200);
 }
 
+//light position, could be used to apply randomness or something
 void setLightPosition(float slpLightX, float slpLightY, float slpLightZ) {
 	lightX = slpLightX;
 	lightY = slpLightY;
 	lightZ = slpLightZ;
 }
 
+//cast out rays, calculcate colors, etc.
 void raytracePixel(float rpX, float rpY, float rpXDir, float rpYDir, float rpCamX, float rpCamY, float rpCamZ) {
 	centerX = rpCamX;
 	centerY = rpCamY;
@@ -151,7 +177,7 @@ void raytracePixel(float rpX, float rpY, float rpXDir, float rpYDir, float rpCam
 	rayZ = cos(rpXDir) * rayZ - sin(rpXDir) * rayX;
 	rayY = sin(rpXDir) * savedRayDirection + cos(rpXDir) * rayX;
 	renderDist = 10000;
-	calculateDistance();
+	calculateDistance(); //changes "renderDist"
 	if (10000 > renderDist) {
 		interseptX = centerX + rayX * renderDist;
 		interseptY = centerY + rayY * renderDist;
@@ -181,12 +207,13 @@ void raytracePixel(float rpX, float rpY, float rpXDir, float rpYDir, float rpCam
 		centerX = interseptX;
 		centerY = interseptY;
 		centerZ = interseptZ;
+		//these lines 211 - 215 are essentially useless, they could be remove. (for testing purposes)
 		savedR = _R;
 		savedG = _G;
 		savedB = _B;
 		calculateDistance();
 		setRGBColorTo(savedR, savedG, savedB);
-		if (lightDist = renderDist) {
+		if (lightDist == renderDist) {
 			specular = phong * phongValue;
 			shade = ambient + diffuse * shade;
 			if (shade > 1) {
@@ -196,6 +223,7 @@ void raytracePixel(float rpX, float rpY, float rpXDir, float rpYDir, float rpCam
 			specular = 0;
 			shade = ambient;
 		}
+		//apply shading (if not occluded from light source)
 		setRGBColorTo(255 * specular + _R * shade, 255 * specular + _G * shade, 255 * specular + _B * shade);
 		setPenColorTo(_R, _G, _B);
 	}
@@ -214,18 +242,20 @@ int main ()
 	const int image_height = 360; //height
 
 	std::cout << "DIMENSIONS: " << image_width << " X " << image_height << "\n\n";
+	
+	//create file
+	std::ofstream fout("CPP_RCA_Output_007.ppm"); //"fout" stands for "file-out", totally arbitrary
+	if (fout.fail()) return -1; //if unable to create file, return error
 
-	std::ofstream fout("CPP_RCA_Output_007.ppm");
-	if (fout.fail()) return -1;
-
-	fout << "P3\n" << image_width << " " << image_height << "\n255\n";
+	fout << "P3\n" << image_width << " " << image_height << "\n255\n"; //write to file. "fout" refers to the file written to
 
 	setLightPosition(80, 150, -80);
 
+	//these loops were from the "raytracing in one weekend" tutorial
 	for (int j = image_height - 1; j >= 0; --j)
 	{
 
-		std::cerr << "\rRemaining: " << j << " " << std::flush;
+		std::cerr << "\rRemaining: " << j << " " << std::flush; //how many lines are left (also from tutorial)
 
 		for (int i = 0; i < image_width; ++i)
 		{
@@ -240,13 +270,13 @@ int main ()
 			int ig = static_cast<int>(255.999 * g);
 			int ib = static_cast<int>(255.999 * b);
 
-			fout << ir << " " << ig << " " << ib << "\n";
+			fout << ir << " " << ig << " " << ib << "\n"; //write colors to file
 		}
 	}
 
 	std::cerr << "\n\nDONE.\n";
 
-	fout.close();
+	fout.close(); //end file
 
 	return 0;
 }
