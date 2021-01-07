@@ -1,5 +1,3 @@
-// CPPRaytracerConsoleApplication.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
 
 #include <iostream> //for 'cout'
 #include <fstream> //for writing to file
@@ -9,6 +7,7 @@
 
 int castAsInteger;
 
+//color
 int R;
 int G;
 int B;
@@ -109,12 +108,16 @@ void plane(float pNormalX, float pNormalY, float pNormalZ, float pDistance, floa
 	dist = (dot + pDistance) / dotDir;
 	if ((dotDir != 0) && (dist < 0) && ((0 - dist) < renderDist)) {
 		renderDist = 0 - dist;
+		//creates checkerboard pattern on the plane
 		castAsInteger = (round((renderDist * rayX + camX) / pSize) + round((renderDist * rayZ + camZ) / pSize));
 		if ((castAsInteger % 2) == 1) {
 			setRGBColorTo(pR1, pG1, pB1);
 		} else {
 			setRGBColorTo(pR2, pG2, pB2);
 		}
+		
+		//determines the surface normal of the plane
+		//already normalized
 		normalX = pNormalX;
 		normalY = pNormalY;
 		normalZ = pNormalZ;
@@ -133,10 +136,11 @@ void sphere(float sX, float sY, float sZ, float sRad, int sR, int sG, int sB) {
 		if ((length > sRad * sRad) && (renderDist > dot - near)) {
 			renderDist = dot - near;
 			setRGBColorTo(sR, sG, sB);
+			//sets the surface normal of each point hit on the surface of the circle
 			normalX = centerX + rayX * renderDist - sX;
 			normalY = centerY + rayY * renderDist - sY;
 			normalZ = centerZ + rayZ * renderDist - sZ;
-			dist = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+			dist = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ); //normalize this vector
 			normalX = normalX / dist;
 			normalY = normalY / dist;
 			normalZ = normalZ / dist;
@@ -195,7 +199,7 @@ void raytracePixel(float rpX, float rpY, float rpXDir, float rpYDir, float rpCam
 		reflectionZ = 2 * normalZ * dot - rayZ;
 		dot = 0 - (lightx * reflectionX + lighty * reflectionY + lightz * reflectionZ);
 		if (dot > 0) {
-			phong = dot * dot * dot * dot * dot * dot * dot;
+			phong = dot * dot * dot * dot * dot * dot * dot; //determines the specularity of a pixel.
 		} else {
 			phong = 0;
 		}
